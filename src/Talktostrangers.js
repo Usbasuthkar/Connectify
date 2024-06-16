@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useMemo,useCallback,useEffect, useState, useRef } from "react";
 import TextField from '@mui/material/TextField';
 import SendIcon from '@mui/icons-material/Send';
 import Button from '@mui/material/Button';
@@ -21,15 +21,28 @@ export default function Talktostrangers() {
     const [left, setLeft] = useState(false);
     const [recovered,set_recover] = useState(false);
     const [lost_connection,set_lost_connection] = useState(false);
+    const [typing, setTyping] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
+    const curseWords = useMemo(() => [
+        "badword1", "badword2", "ass", "badword3", "fuck", "nigga", "fucker", 
+        "asshole", "cunt", "whore", "nigga", "hoe", "Bastard", "Shit", "Bitch", 
+        "Dick", "Pussy", "son of a bitch", "Mother Fucker", "horny", "Cock", 
+        "sex"
+      ], []);
+      const censorMessage = useCallback((message) => {
+        const pattern = new RegExp(curseWords.join("|"), "gi");
+        return message.replace(pattern, match => "*".repeat(match.length));
+      }, [curseWords]);
     useEffect(() => {
         if (socket) {
-            
+           
             socket.on("got_username",(data)=>{
                 console.log("got the damn name");
                 setName(data);
             })
             socket.on('message',(data)=>{
-                const message = {text:data, time:new Date().toLocaleTimeString(),
+                const censoredMessage = censorMessage(data);
+                const message = {text:censoredMessage, time:new Date().toLocaleTimeString(),
                 movement:'left',
                 marginleft: 0,
                 timemargin:0,
@@ -58,11 +71,28 @@ export default function Talktostrangers() {
                 set_lost_connection(true);
                 setopp_or_I_left(data);
             })
+            socket.on("typing", () => {
+                // This event is triggered when a user starts typing.
+                console.log("Typing event received");
+              
+                // Set the `isTyping` state to true to indicate that the user is typing.
+                setIsTyping(true);
+              });
+              
+              socket.on("stop typing", () => {
+                // This event is triggered when a user stops typing.
+                console.log("Stop typing event received");
+              
+                // Set the `isTyping` state to false to indicate that the user has stopped typing.
+                setIsTyping(false);
+              });
+
         }
-    }, [socket,messages,name,left]);
-    const handleClick = async () => {
+    }, [socket,messages,name,left,censorMessage]);
+    const handlesendmessages = async () => {
         if (inputValue.length !== 0 && name.length !== 0) {
-            const data = { text: inputValue, time: new Date().toLocaleTimeString(),
+            const censoredMessage = censorMessage(inputValue);
+            const data = { text: censoredMessage, time: new Date().toLocaleTimeString(),
             marginleft:63,
             movement:'right',
             timemargin:92,
@@ -74,11 +104,57 @@ export default function Talktostrangers() {
             if (chatAreaRef.current) {
                 chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
             }
-
-            socket.emit("message",inputValue);
+            socket.emit("message", censoredMessage);
+            console.log("Stop typing event sent (message sent)");
+            socket.emit("stop typing", { username: name }); // Emit stop typing when sending a message
+            setTyping(false);
         }
     };
-
+    const typingHandler = (e) => {
+        // This function is called when the user types something in the input field.
+        console.log("Typing handler called");
+      
+        // Update the input value.
+        setInputValue(e.target.value);
+      
+        // Check if a socket connection exists.
+        if (!socket) return;
+      
+        // Check if the user is currently typing.
+        if (!typing) {
+          // Set the typing state to true.
+          setTyping(true);
+      
+          // Send a "typing" event to the server.
+          console.log("Typing event sent");
+          socket.emit("typing");
+        }
+      
+        // Get the current time.
+        let lastTypingTime = new Date().getTime();
+      
+        // Set the timer length to 3 seconds.
+        var timerLength = 3000;
+      
+        // Set a timer to check if the user has stopped typing.
+        setTimeout(() => {
+          // Get the current time.
+          var timeNow = new Date().getTime();
+      
+          // Calculate the time difference between the current time and the last typing time.
+          var timeDiff = timeNow - lastTypingTime;
+      
+          // Check if the time difference is greater than or equal to the timer length.
+          if (timeDiff >= timerLength && typing) {
+            // Send a "stop typing" event to the server.
+            console.log("Stop typing event sent (timeout)");
+            socket.emit("stop typing");
+      
+            // Set the typing state to false.
+            setTyping(false);
+          }
+        }, timerLength);
+      };
     useEffect(() => {
         if (name.length !== 0) {
             setDisabled(false);
@@ -115,15 +191,18 @@ export default function Talktostrangers() {
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
-            handleClick();
+            handlesendmessages();
         } else if (e.keyCode === 27) {
             handleLeft();
         }
     };
 
     return (
-        <div>
-            <div className="card" style={{ backgroundColor:"black",marginTop: "5%", marginLeft: "5%", marginRight: "5%", marginBottom: "5%", height: "600px", border: "1px solid white", borderRadius: "10px" }}>
+        <div className="card" style={{backgroundColor:"black"}}>
+            <div className="card-header element" style={{height: "60px",border:"1px solid white",borderRadius: "10px" }}>
+                    <h3 style={{ color:"white",textAlign: "center" }}>You are {myname}</h3>
+                </div>
+            <div className="card" style={{ backgroundColor:"black",marginTop: "2%", marginLeft: "2%", marginRight: "2%", marginBottom: "2%", height: "600px", border: "1px solid white", borderRadius: "10px" }}>
                 <div className="card-header element" style={{ height: "60px",border:"1px solid white",borderRadius: "10px" }}>
                     <h3 style={{ color:"white",textAlign: "center" }}>You Connectedtify To {name.length === 0 ? notLoadedName : name}</h3>
                 </div>
@@ -152,13 +231,19 @@ export default function Talktostrangers() {
                         Connection Restored.
                       </Alert>
                     }
+                    {isTyping && (
+                        <div style={{color:"white",float:"left"}}>Typing...</div>
+                    )}
                 </div>
                 <div className="card-footer" style={{ marginBottom: "1%",border:"1px solid white",borderRadius: "10px" }}>
                     <TextField
                     sx={{input: { color: 'white' }}} color="secondary" focused
                         required
                         value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
+                        onChange={(e) => {
+                            typingHandler(e); // Call typingHandler when input changes
+                            setInputValue(e.target.value);
+                        }}
                         onKeyDown={handleKeyDown}
                         fullWidth
                         disabled={disabled}
@@ -169,7 +254,7 @@ export default function Talktostrangers() {
                             endAdornment: (
                                 <React.Fragment>
                                     <Button onClick={handleLeft} color="error" sx={{ marginRight: "20px", marginBottom: "10px" }} size="small" variant="contained">{leave_new}</Button>
-                                    <Button onClick={handleClick} sx={{ marginBottom: "10px" }} size="small" variant="contained" endIcon={<SendIcon />}>Send</Button>
+                                    <Button onClick={handlesendmessages} sx={{ marginBottom: "10px" }} size="small" variant="contained" endIcon={<SendIcon />}>Send</Button>
                                 </React.Fragment>
                             )
                         }}

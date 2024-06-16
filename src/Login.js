@@ -12,7 +12,11 @@ export default function Login() {
         const socket = connect()
         socket.emit("username",username);
     };
-
+    const handleClickchannels = async()=>{
+        const username = document.getElementById('standard-basic').value;
+        const socket = connect()
+        socket.emit("chatrooms",username);
+    }
     return (
         <>
             <div style={{ marginLeft: "10%", marginRight: "10%" }}>
@@ -32,7 +36,7 @@ export default function Login() {
                                     <Button onClick={handleClick} variant="text">Enter 1v1 chat</Button>
                                 </Link>
                                 <Link to='/rooms'>
-                                <Button onClickvariant="text">Enter chatrooms</Button>
+                                <Button onClick={handleClickchannels}>Enter chatrooms</Button>
                                 </Link>
                             </Stack>
                         </form>
@@ -41,7 +45,7 @@ export default function Login() {
             </div>
             <br /><br /><br />
             <div style={{ marginLeft: "50px", marginRight: "50px" }}>
-            <strong><p style={{color:'white'}}>Welcome to our exclusive chatroom for adults aged 18 and above. By entering this space, you are agreeing to abide by the following guidelines and understandings:
+            <strong><div style={{color:'white'}}>Welcome to our exclusive chatroom for adults aged 18 and above. By entering this space, you are agreeing to abide by the following guidelines and understandings:
 <ol start={1} style={{color:'white'}}>
 <li> Age Restriction: This chatroom is strictly for individuals who are 18 years of age or older. If you are under the age of 18, you are not permitted to access or participate in any discussions within this forum.</li>
 <br/>
@@ -59,7 +63,7 @@ export default function Login() {
 <br/>
 <li> Enjoyment and Engagement: Take advantage of this platform to connect with like-minded individuals, expand your social network, and explore new perspectives. Whether you're here to chat, seek advice, or simply unwind, make the most of your experience.</li>
 </ol>
-By acknowledging and adhering to these guidelines, you contribute to the creation of a vibrant and thriving community. Thank you for choosing to be a part of our chatroom. Let the conversations begin!</p></strong>
+By acknowledging and adhering to these guidelines, you contribute to the creation of a vibrant and thriving community. Thank you for choosing to be a part of our chatroom. Let the conversations begin!</div></strong>
             </div>
         </>
     );
