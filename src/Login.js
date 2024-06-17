@@ -1,4 +1,4 @@
-import React from "react";
+import React,{ useState } from "react";
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { Link } from "react-router-dom";
@@ -6,7 +6,8 @@ import TextField from '@mui/material/TextField';
 import { useWebSocket } from './WebSocketContext';
 export default function Login() {
     const { connect } = useWebSocket();
-
+    const [username,set_username] = useState('Someone');
+    const [no_username,set_no_username] = useState(false);
     const handleClick = async () => {
         const username = document.getElementById('standard-basic').value;
         const socket = connect()
@@ -16,6 +17,15 @@ export default function Login() {
         const username = document.getElementById('standard-basic').value;
         const socket = connect()
         socket.emit("chatrooms",username);
+    }
+    const handlechange = (event)=>{
+        set_username(event.target.value);
+        if(event.target.value === ''){
+            set_no_username(true);
+        }
+        else{
+            set_no_username(false);
+        }
     }
     return (
         <>
@@ -28,15 +38,15 @@ export default function Login() {
                         <h5 className="card-title" style={{color:"white"}}>Enter Your Username</h5><br />
                         <form>
                             <div className="form-group">
-                                <TextField  sx={{input: { color: 'white' }}} color="secondary" focused  required fullWidth id="standard-basic" label="Standard" variant="standard" />
+                                <TextField  sx={{input: { color: 'white' }}} onChange={handlechange} color="secondary" focused  required fullWidth id="standard-basic" label="Standard" variant="standard" value={username}/>
                                 <small id="emailHelp" className="form-text text-muted"  style={{color:"white"}}>The above Username will be visible to other strangers</small>
                             </div>
                             <Stack spacing={2} direction="row">
                                 <Link to='/talk'>
-                                    <Button onClick={handleClick} variant="text">Enter 1v1 chat</Button>
+                                    <Button disabled={no_username} onClick={handleClick} variant="text">Enter 1v1 chat</Button>
                                 </Link>
                                 <Link to='/rooms'>
-                                <Button onClick={handleClickchannels}>Enter chatrooms</Button>
+                                <Button disabled={no_username} onClick={handleClickchannels}>Enter chatrooms</Button>
                                 </Link>
                             </Stack>
                         </form>
