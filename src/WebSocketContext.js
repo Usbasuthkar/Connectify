@@ -4,7 +4,7 @@ const WebSocketContext = createContext(null);
 export const WebSocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const connect = () => {
-        const ws = io("ws://localhost:5000");
+        const ws = io("ws://localhost:6000");
         setSocket(ws);
         return ws;
     };
